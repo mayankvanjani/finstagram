@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, session, url_for, redirect
 import pymysql.cursors
 import hashlib
+from functools import wraps
 
 #Initialize the app from Flask
 app = Flask(__name__)
@@ -81,9 +82,25 @@ def registerAuth():
         cursor.close()
         return render_template('index.html')
 
+'''
+### Check if Logged In ###
+def isLoggedIn(f):
+    @wraps(f)
+    def dec(*args,**kwargs):
+        if not "username" in session: return redirect(url_for("login"))
+        return f(*args,**kwargs)
+    #if not "username" in session: return redirect(url_for("login"))
+    #print("check login")
+    #return redirect("/")
+    return dec
+'''
+
+def isLoggedIn():
+    if not "username" in session: return redirect(url_for("login"))
+
 @app.route('/home')
+#@isLoggedIn
 def home():
-    isLoggedIn()
     #user = session['username']
     #cursor = conn.cursor();
     #query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
@@ -93,21 +110,16 @@ def home():
     return render_template('home.html', username = session["username"])
 
 ### IMPLEMENTATION FUNCTIONS ###
-def isLoggedIn():
-    if not "username" in session: return redirect(url_for("login.html"))
-
 def uploadImage():
     pass
 
 ### FriendGroup Required Features ###
 @app.route('/addGroup')
 def addGroup():
-    isLoggedIn()
     return render_template('friend.html')
 
 @app.route('/addFriendGroup', methods = ["GET", "POST"])
 def addFriendGroup():
-    isLoggedIn()
     groupName = request.form['Group Name']
     description = request.form['Description']
 
@@ -131,7 +143,6 @@ def addFriendGroup():
     
 @app.route('/viewGroup', methods = ["GET", "POST"])
 def viewGroup():
-    isLoggedIn()
     user = session['username']
     cursor = conn.cursor();
     query = 'SELECT groupName,groupCreator FROM BelongTo WHERE username = %s'
@@ -144,7 +155,6 @@ def viewGroup():
 ### Follower Required Features ###
 @app.route('/manageFollows', methods = ["GET", "POST"])
 def manageFollows():
-    isLoggedIn()
     user = session['username']
     cursor = conn.cursor();
     query = 'SELECT follower FROM Follow WHERE followee = %s AND followStatus = 0'
@@ -160,7 +170,6 @@ def manageFollows():
 
 @app.route('/followRequest', methods = ["GET", "POST"])
 def followRequest():
-    isLoggedIn()
     user = session['username']
     toFollow = request.form['request']
     cursor = conn.cursor()
@@ -197,7 +206,6 @@ def followRequest():
 
 @app.route('/acceptRequest', methods = ["GET", "POST"])
 def acceptRequest():
-    #isLoggedIn()
     user = session['username']
     accepted = request.form['accepted']
     print(accepted)
@@ -210,7 +218,6 @@ def acceptRequest():
 
 @app.route('/declineRequest', methods = ["GET", "POST"])
 def declineRequest():
-    #isLoggedIn()
     user = session['username']
     declined = request.form['declined']
     #print(declined)
