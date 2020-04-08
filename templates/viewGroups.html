@@ -1,0 +1,38 @@
+<html>
+<head>
+</head>
+
+<body>
+
+	<form action="/post" method="POST">
+		<h1>Welcome {{username}} </br>
+		Here are Your FriendGroups:</h1> 
+	</form>
+
+	<style type="text/css">
+		table, th, td{
+			border: 1px solid black;
+		}
+	</style>
+
+	<table>
+		<th>FriendGroup Name</th>
+		<th>FriendGroup Creator</th>
+
+	{% for line in posts %}
+		<tr>
+			<td><center>{{line.groupName}}</center></td>
+			<td><center>{{line.groupCreator}}</center></td>
+		</tr>
+	{% endfor %}
+
+	</table>
+
+	</br>
+	<a href="/home">Go Back</a><br>
+	<a href="/logout">Logout</a>
+
+</body>
+
+
+</html>

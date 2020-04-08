@@ -1,0 +1,75 @@
+<html>
+<head>
+</head>
+
+<body>
+	<h1>Welcome {{username}}</h1>
+	<h1>Manage Your Followers Here</h1>
+
+
+	<h2><center>Followers</center></h2>
+		<style type="text/css">
+			table, th, td{
+				border: 1px solid black;
+			}
+		</style>
+
+		<table align="center">
+			<th>Follower Names</th>
+
+		{% for line in followerPosts %}
+			<tr>
+				<td><center>{{line.follower}}</center></td>
+			</tr>
+		{% endfor %}
+
+		</table>
+
+
+	<h2><center>Follow Requests</center></h2>
+		<style type="text/css">
+			table, th, td{
+				border: 1px solid black;
+			}
+		</style>
+
+		<table align="center">
+			<th>Follow Requests</th>
+			<th>Choose to Accept or Decline</th>
+
+		{% for line in requestPosts %}
+			<tr>
+				<td><center>{{line.follower}}</center></td>
+				<form action="/acceptRequest" method="POST">
+				<center><input type="hidden" name = "accepted" value = {{line.follower}}></center>
+				<td><center><input type="submit" value = Accept /></center>
+				</form> </br>
+				<form action="/declineRequest" method="POST">
+				<center><input type="hidden" name = "declined" value = {{line.follower}}></center>
+				<center><input type="submit" value = Decline /></center></td>
+				</form>
+			</tr>
+		{% endfor %}
+
+		</table>
+
+	<h2><center>Follow Someone Else</center></h2>
+		<center><form action="/followRequest" method="POST">
+			<input type="text" name="request" placeholder="Enter Username" required/> </br>
+			<input type="submit" value="Submit Follow Request"  />
+			{% if error %}
+				<p class="error"><strong>Error:</strong> {{error}}</p>
+			{% endif %}
+
+		</center></form>
+
+
+
+	</br> </br>
+	<a href="/home">Go Back</a>
+	</br>
+	<a href="/logout">Logout</a>
+
+</body>
+
+</html>

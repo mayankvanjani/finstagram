@@ -1,4 +1,4 @@
-#Import Flask ALibrary
+#Import Flask Library
 from flask import Flask, render_template, request, session, url_for, redirect
 import pymysql.cursors
 import hashlib
@@ -14,6 +14,7 @@ conn = pymysql.connect(host="localhost",
                        password="root",
                        db="finstagram",
                        charset="utf8mb4",
+                       autocommit=True,
                        cursorclass=pymysql.cursors.DictCursor)
 
 #Define a route to hello function
@@ -82,6 +83,7 @@ def registerAuth():
 
 @app.route('/home')
 def home():
+    isLoggedIn()
     #user = session['username']
     #cursor = conn.cursor();
     #query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
@@ -92,14 +94,20 @@ def home():
 
 ### IMPLEMENTATION FUNCTIONS ###
 def isLoggedIn():
-    pass
+    if not "username" in session: return redirect(url_for("login.html"))
 
 def uploadImage():
     pass
 
-@app.route('/addGroup', methods = ["Post"])
-#@login.required
+### FriendGroup Required Features ###
+@app.route('/addGroup')
+def addGroup():
+    isLoggedIn()
+    return render_template('friend.html')
+
+@app.route('/addFriendGroup', methods = ["GET", "POST"])
 def addFriendGroup():
+    isLoggedIn()
     groupName = request.form['Group Name']
     description = request.form['Description']
 
@@ -110,7 +118,7 @@ def addFriendGroup():
 
     error = None
     if(data):
-        error = "FrienGroup with this Owner Already Exists"
+        error = "FriendGroup with this Owner Already Exists"
         return render_template('friend.html', error = error)
     else:
         ins = 'INSERT INTO FriendGroup VALUES(%s, %s, %s)'
@@ -121,42 +129,97 @@ def addFriendGroup():
         cursor.close()
         return redirect(url_for("home"))
     
-
-'''
-@app.route('/post', methods=['GET', 'POST'])
-def post():
-    username = session['username']
+@app.route('/viewGroup', methods = ["GET", "POST"])
+def viewGroup():
+    isLoggedIn()
+    user = session['username']
     cursor = conn.cursor();
-    blog = request.form['blog']
-    query = 'INSERT INTO blog (blog_post, username) VALUES(%s, %s)'
-    cursor.execute(query, (blog, username))
+    query = 'SELECT groupName,groupCreator FROM BelongTo WHERE username = %s'
+    #query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
+    cursor.execute(query, (user))
+    data = cursor.fetchall()
+    cursor.close()
+    return render_template('viewGroups.html', username = user, posts = data)
+
+### Follower Required Features ###
+@app.route('/manageFollows', methods = ["GET", "POST"])
+def manageFollows():
+    isLoggedIn()
+    user = session['username']
+    cursor = conn.cursor();
+    query = 'SELECT follower FROM Follow WHERE followee = %s AND followStatus = 0'
+    cursor.execute(query, (user))
+    data = cursor.fetchall()
+    query = 'SELECT follower FROM Follow WHERE followee = %s AND followStatus = 1'
+    cursor.execute(query, (user))
+    moreData = cursor.fetchall()
+    #conn.commit()
+    cursor.close()
+    return render_template('follows.html', username = user,
+                           followerPosts = moreData, requestPosts = data)
+
+@app.route('/followRequest', methods = ["GET", "POST"])
+def followRequest():
+    isLoggedIn()
+    user = session['username']
+    toFollow = request.form['request']
+    cursor = conn.cursor()
+    
+    legal = 'SELECT * FROM Person WHERE username = %s'
+    cursor.execute(legal, (toFollow))
+    data = cursor.fetchone()
+    if (not data):
+        error = "Invalid Username, Try Again"
+        return render_template('follows.html', error = error)
+
+    queryTrue = 'SELECT * FROM Follow WHERE follower = %s and followee = %s and followStatus = 1'
+    cursor.execute(queryTrue, (user, toFollow))
+    data = cursor.fetchone()
+    if(data):
+        error = "You are already following them"
+        return render_template('follows.html', error = error)
+
+    queryFalse = 'SELECT * FROM Follow WHERE follower = %s and followee = %s and followStatus = 0'
+    cursor.execute(queryFalse, (user, toFollow))
+    data = cursor.fetchone()
+    if(data):
+        error = "Follow Request has already been sent, wait for the response"
+        return render_template('follows.html', error = error)
+
+    ins = "INSERT into Follow VALUES(%s,%s,%s)"
+    cursor.execute(ins, (user,toFollow,0))
+    #conn.commit()
+    #upd = 'UPDATE Follow SET followStatus=1 WHERE follower = %s AND followee = %s'
+    #cursor.execute(upd, (user, toFollow))
     conn.commit()
     cursor.close()
-    return redirect(url_for('home'))
+    return redirect(url_for("home"))
 
-@app.route('/select_blogger')
-def select_blogger():
-    #check that user is logged in
-    #username = session['username']
-    #should throw exception if username not found
-    
-    cursor = conn.cursor();
-    query = 'SELECT DISTINCT username FROM blog'
-    cursor.execute(query)
-    data = cursor.fetchall()
+@app.route('/acceptRequest', methods = ["GET", "POST"])
+def acceptRequest():
+    #isLoggedIn()
+    user = session['username']
+    accepted = request.form['accepted']
+    print(accepted)
+    cursor = conn.cursor()
+    query = 'UPDATE Follow SET followStatus = 1 WHERE Follow.follower = %s AND Follow.followee = %s'
+    cursor.execute(query, (accepted,user))
+    conn.commit()
     cursor.close()
-    return render_template('select_blogger.html', user_list=data)
+    return redirect('/manageFollows')
 
-@app.route('/show_posts', methods=["GET", "POST"])
-def show_posts():
-    poster = request.args['poster']
-    cursor = conn.cursor();
-    query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-    cursor.execute(query, poster)
-    data = cursor.fetchall()
+@app.route('/declineRequest', methods = ["GET", "POST"])
+def declineRequest():
+    #isLoggedIn()
+    user = session['username']
+    declined = request.form['declined']
+    #print(declined)
+    cursor = conn.cursor()
+    query = 'DELETE FROM Follow WHERE Follow.follower = %s and Follow.followee = %s'
+    cursor.execute(query, (declined,user))
+    conn.commit()
     cursor.close()
-    return render_template('show_posts.html', poster_name=poster, posts=data)
-'''
+    return redirect('/manageFollows')
 
 @app.route('/logout')
 def logout():
