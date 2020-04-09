@@ -82,7 +82,6 @@ def registerAuth():
         cursor.close()
         return render_template('index.html')
 
-'''
 ### Check if Logged In ###
 def isLoggedIn(f):
     @wraps(f)
@@ -93,13 +92,14 @@ def isLoggedIn(f):
     #print("check login")
     #return redirect("/")
     return dec
-'''
 
+'''
 def isLoggedIn():
     if not "username" in session: return redirect(url_for("login"))
+'''
 
 @app.route('/home')
-#@isLoggedIn
+@isLoggedIn
 def home():
     #user = session['username']
     #cursor = conn.cursor();
@@ -115,10 +115,12 @@ def uploadImage():
 
 ### FriendGroup Required Features ###
 @app.route('/addGroup')
+@isLoggedIn
 def addGroup():
     return render_template('friend.html')
 
 @app.route('/addFriendGroup', methods = ["GET", "POST"])
+@isLoggedIn
 def addFriendGroup():
     groupName = request.form['Group Name']
     description = request.form['Description']
@@ -142,6 +144,7 @@ def addFriendGroup():
         return redirect(url_for("home"))
     
 @app.route('/viewGroup', methods = ["GET", "POST"])
+@isLoggedIn
 def viewGroup():
     user = session['username']
     cursor = conn.cursor();
@@ -154,6 +157,7 @@ def viewGroup():
 
 ### Follower Required Features ###
 @app.route('/manageFollows', methods = ["GET", "POST"])
+@isLoggedIn
 def manageFollows():
     user = session['username']
     cursor = conn.cursor();
@@ -169,6 +173,7 @@ def manageFollows():
                            followerPosts = moreData, requestPosts = data)
 
 @app.route('/followRequest', methods = ["GET", "POST"])
+@isLoggedIn
 def followRequest():
     user = session['username']
     toFollow = request.form['request']
@@ -205,6 +210,7 @@ def followRequest():
     return redirect(url_for("home"))
 
 @app.route('/acceptRequest', methods = ["GET", "POST"])
+@isLoggedIn
 def acceptRequest():
     user = session['username']
     accepted = request.form['accepted']
@@ -217,6 +223,7 @@ def acceptRequest():
     return redirect('/manageFollows')
 
 @app.route('/declineRequest', methods = ["GET", "POST"])
+@isLoggedIn
 def declineRequest():
     user = session['username']
     declined = request.form['declined']
