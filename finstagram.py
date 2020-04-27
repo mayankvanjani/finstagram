@@ -3,10 +3,12 @@ from flask import Flask, render_template, request, session, url_for, redirect
 import pymysql.cursors
 import hashlib
 from functools import wraps
+from datetime import datetime
 
 #Initialize the app from Flask
 app = Flask(__name__)
 SALT = "cs3083salting"
+picID = 0
 
 #Configure MySQL
 conn = pymysql.connect(host="localhost",
@@ -98,6 +100,8 @@ def isLoggedIn():
     if not "username" in session: return redirect(url_for("login"))
 '''
 
+
+# Redireect to homepage if logged in
 @app.route('/home')
 @isLoggedIn
 def home():
@@ -110,15 +114,61 @@ def home():
     return render_template('home.html', username = session["username"])
 
 ### IMPLEMENTATION FUNCTIONS ###
-def uploadImage():
-    pass
+def convertToBinaryData(filename):
+    # Convert digital data to binary format
+    with open(filename, 'rb') as file:
+        binaryData = file.read()
+    return binaryData
 
+@app.route('/post')
+@isLoggedIn
+def post():
+    return render_template('post.html', username = session["username"])
+
+@app.route('/postPhoto', methods = ["GET", "POST"])
+@isLoggedIn
+def postPhoto():
+    #print(picID)
+    user = session['username']
+    pic = request.form['upload']
+    cap = request.form['caption']
+    allFollow = request.form['allFollow']
+    #print(allFollow)
+    if allFollow == "True": allFollow = 1
+    else: allFollow = 0
+    now = datetime.now()
+    dt = now.strftime('%Y-%m-%d %H:%M:%S')
+    #print("TESTING IN POST PHOTO")
+    #print(cap, allFollow, dt)
+    
+    cursor = conn.cursor()
+    #query = 'SELECT * FROM FriendGroup WHERE groupName = %s AND groupCreator = %s'
+    query = 'SELECT * FROM Person WHERE username = %s'
+    #cursor.execute(query, (session["username"]))
+    #data = cursor.fetchone()
+    #error = None
+
+    #if data:
+    ins = 'INSERT INTO Photo VALUES(%s, %s, %s, %s, %s, %s)'
+    #picID += 1
+    cursor.execute(ins, (picID,dt,pic,allFollow,cap,user))
+    conn.commit()
+    cursor.close()
+    #else:
+    #    error = "Person Does Not Exist"
+    #    return render_template('post.html', username = session["username"], error = error)
+    return redirect(url_for("home"))
+
+
+    
 ### FriendGroup Required Features ###
+# Add a friend group
 @app.route('/addGroup')
 @isLoggedIn
 def addGroup():
-    return render_template('friend.html')
+    return render_template('friend.html', username = session["username"])
 
+# Data filled in on add group page, update database
 @app.route('/addFriendGroup', methods = ["GET", "POST"])
 @isLoggedIn
 def addFriendGroup():
@@ -133,7 +183,7 @@ def addFriendGroup():
     error = None
     if(data):
         error = "FriendGroup with this Owner Already Exists"
-        return render_template('friend.html', error = error)
+        return render_template('friend.html', username = session["username"], error = error)
     else:
         ins = 'INSERT INTO FriendGroup VALUES(%s, %s, %s)'
         cursor.execute(ins, (groupName, session["username"], description))

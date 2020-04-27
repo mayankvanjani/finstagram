@@ -1,0 +1,28 @@
+<html>
+<head>
+</head>
+
+<body>
+	<h1>Welcome {{username}}</h1>
+	<h2>Post a Photo</h2>
+
+	<form action="/postPhoto" method="POST">
+
+		<input type="file" name = "upload" required/> </br>
+		<input type="text" name = "caption" placeholder="Caption"> </br>
+		<input type="checkbox" name="allFollow" value=True> Viewable for All Followers? </br>
+		<input type="submit" value = Upload /> </br>
+		{% if error %}
+			<p class="error"><strong>Error:</strong> {{error}}</p>
+		{% endif %}
+
+		</br> </br>
+		<a href="/home">Go Back</a>
+		</br>
+		<a href="/logout">Logout</a>
+
+	</form>
+
+</body>
+
+</html>
