@@ -10,7 +10,14 @@
 
 		<input type="file" name = "upload" required/> </br>
 		<input type="text" name = "caption" placeholder="Caption"> </br>
-		<input type="checkbox" name="allFollow" value=True> Viewable for All Followers? </br>
+		</br> Viewable for Who? </br>
+		<select name = "shared" required>
+                    <option value = ""> --Please select an option-- </option>
+                    <option value = "allFollowers"> All Followers </option>
+                    {% for line in groups %}
+                        <option value = {{line.groupName, line.groupCreator}}> {{line.groupName}} CREATED BY {{line.groupCreator}} </option>
+                    {% endfor %}
+                </select> </br> </br>
 		<input type="submit" value = Upload /> </br>
 		{% if error %}
 			<p class="error"><strong>Error:</strong> {{error}}</p>

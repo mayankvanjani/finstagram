@@ -4,11 +4,13 @@ import pymysql.cursors
 import hashlib
 from functools import wraps
 from datetime import datetime
+import os
 
 #Initialize the app from Flask
 app = Flask(__name__)
 SALT = "cs3083salting"
 picID = 0
+IMAGES = os.path.join(os.getcwd(), "Uploaded_Images")
 
 #Configure MySQL
 conn = pymysql.connect(host="localhost",
@@ -114,16 +116,16 @@ def home():
     return render_template('home.html', username = session["username"])
 
 ### IMPLEMENTATION FUNCTIONS ###
-def convertToBinaryData(filename):
-    # Convert digital data to binary format
-    with open(filename, 'rb') as file:
-        binaryData = file.read()
-    return binaryData
-
 @app.route('/post')
 @isLoggedIn
 def post():
-    return render_template('post.html', username = session["username"])
+    user = session["username"]
+    cursor = conn.cursor()
+    query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
+    cursor.execute(query, (user))
+    groupNames = cursor.fetchall()
+    cursor.close()
+    return render_template('post.html', username = user, groups = groupNames)
 
 @app.route('/postPhoto', methods = ["GET", "POST"])
 @isLoggedIn
@@ -131,32 +133,29 @@ def postPhoto():
     #print(picID)
     user = session['username']
     pic = request.form['upload']
+    ###   filepath = os.path.join(IMAGES, str(picID)+pic)
+    ###   pic.save(filepath)
     cap = request.form['caption']
-    allFollow = request.form['allFollow']
-    #print(allFollow)
-    if allFollow == "True": allFollow = 1
-    else: allFollow = 0
+    share = request.form['shared']
+    allFollow = (1 if share == "allFollowers" else 0)
     now = datetime.now()
     dt = now.strftime('%Y-%m-%d %H:%M:%S')
-    #print("TESTING IN POST PHOTO")
-    #print(cap, allFollow, dt)
-    
     cursor = conn.cursor()
-    #query = 'SELECT * FROM FriendGroup WHERE groupName = %s AND groupCreator = %s'
-    query = 'SELECT * FROM Person WHERE username = %s'
-    #cursor.execute(query, (session["username"]))
-    #data = cursor.fetchone()
-    #error = None
 
-    #if data:
+    if share == "":
+        error = "Select who to share this photo with"
+        query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
+        cursor.execute(query, (user))
+        groupNames = cursor.fetchall()
+        cursor.close()
+        return render_template('post.html', username = user, groups = groupNames, error = error)
+    
+
     ins = 'INSERT INTO Photo VALUES(%s, %s, %s, %s, %s, %s)'
     #picID += 1
     cursor.execute(ins, (picID,dt,pic,allFollow,cap,user))
     conn.commit()
     cursor.close()
-    #else:
-    #    error = "Person Does Not Exist"
-    #    return render_template('post.html', username = session["username"], error = error)
     return redirect(url_for("home"))
 
 
