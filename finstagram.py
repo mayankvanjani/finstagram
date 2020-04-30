@@ -10,6 +10,7 @@ import os
 app = Flask(__name__)
 SALT = "cs3083salting"
 picID = 0
+picNum = 1
 IMAGES = os.path.join(os.getcwd(), "Uploaded_Images")
 
 #Configure MySQL
@@ -130,18 +131,33 @@ def post():
 @app.route('/postPhoto', methods = ["GET", "POST"])
 @isLoggedIn
 def postPhoto():
+    global picNum
     #print(picID)
     user = session['username']
-    pic = request.form['upload']
-    ###   filepath = os.path.join(IMAGES, str(picID)+pic)
-    ###   pic.save(filepath)
-    cap = request.form['caption']
-    share = request.form['shared']
-    allFollow = (1 if share == "allFollowers" else 0)
-    now = datetime.now()
-    dt = now.strftime('%Y-%m-%d %H:%M:%S')
+    #pic = request.form['upload']
     cursor = conn.cursor()
-
+        
+    if request.files:
+        imageFile = request.files['upload']
+        imageName = str(picNum) + imageFile.filename
+        picNum += 1
+        filepath = os.path.join(IMAGES, imageName)
+        imageFile.save(filepath)
+        cap = request.form['caption']
+        share = request.form['shared']
+        allFollow = (1 if share == "allFollowers" else 0)
+        now = datetime.now()
+        dt = now.strftime('%Y-%m-%d %H:%M:%S')
+    
+    else:
+        error = "Need to Upload Photo"
+        query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
+        cursor.execute(query, (user))
+        groupNames = cursor.fetchall()
+        cursor.close()
+        return render_template('post.html', username = user, groups = groupNames, error = error)
+    
+    
     if share == "":
         error = "Select who to share this photo with"
         query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
@@ -153,7 +169,8 @@ def postPhoto():
 
     ins = 'INSERT INTO Photo VALUES(%s, %s, %s, %s, %s, %s)'
     #picID += 1
-    cursor.execute(ins, (picID,dt,pic,allFollow,cap,user))
+    #cursor.execute(ins, (picID,dt,pic,allFollow,cap,user))
+    cursor.execute(ins, (picID,dt,imageName,allFollow,cap,user))
     conn.commit()
     cursor.close()
     return redirect(url_for("home"))

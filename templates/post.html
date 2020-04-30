@@ -6,7 +6,7 @@
 	<h1>Welcome {{username}}</h1>
 	<h2>Post a Photo</h2>
 
-	<form action="/postPhoto" method="POST">
+	<form action="/postPhoto" method="POST" enctype="multipart/form-data">
 
 		<input type="file" name = "upload" required/> </br>
 		<input type="text" name = "caption" placeholder="Caption"> </br>
