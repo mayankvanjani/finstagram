@@ -175,8 +175,46 @@ def postPhoto():
     cursor.close()
     return redirect(url_for("home"))
 
-
+'''
+@app.route('/view')
+@isLoggedIn
+def view():
+    user = session["username"]
+    #cursor = conn.cursor()
+    #query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
+    #cursor.execute(query, (user))
+    #groupNames = cursor.fetchall()
+    #cursor.close()
+    #return render_template('post.html', username = user, groups = groupNames)
+    return render_template('view.html', username = user)
+'''
+@app.route('/viewPhotos', methods = ["GET", "POST"])
+@isLoggedIn
+def viewPhotos():
+    user = session["username"]
+    cursor = conn.cursor()
     
+    query = ("SELECT filePath,pID,firstName,lastName,postingDate " +
+             "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) " +
+             "WHERE username = %s")
+
+    cursor.execute(query, (user))
+    yourPics = cursor.fetchall()
+
+    query = ("SELECT filePath,pID,firstName,lastName,postingDate " +
+             "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) JOIN Follow ON(Photo.poster = Follow.followee)" +
+             "WHERE followStatus = 1 AND follower = %s AND allFollowers = 1")
+    
+    cursor.execute(query, (user))
+    sharedPics = cursor.fetchall()
+    cursor.close()
+    #return render_template('view.html', username = user, yourImages = pass, sharedImages = pass)
+    return render_template('view.html', username = user, yourImages = yourPics, sharedImages = sharedPics)
+
+
+
+
+
 ### FriendGroup Required Features ###
 # Add a friend group
 @app.route('/addGroup')
