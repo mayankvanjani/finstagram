@@ -1,22 +1,22 @@
 <html>
 <head>
 <style>
-	body {
-		background-color: rgba(204,255,204,0.75);
-	}
+	body {background-color: rgba(204,255,204,0.75);}
 </style>
 </head>
 
 <body>
-	<h1>Welcome {{username}}</h1>
-	<h2>Post a Photo</h2>
+	<h1> Welcome {{username}} </h1>
+	<h2> Post a Photo </h2>
 
 	<form action="/postPhoto" method="POST" enctype="multipart/form-data">
 
 		<input type="file" name = "upload" required/> </br>
 		<input type="text" name = "caption" placeholder="Caption"> </br>
+
 		</br> Viewable for Who? </br>
 		<select name = "shared" required>
+
                     <option value = ""> --Please select an option-- </option>
                     <option value = "none"> NONE </option>
                     <option value = "allFollowers"> All Followers </option>
@@ -25,6 +25,7 @@
                         <!-- <option value = '{"name":{{line.groupName}},"creator":{{line.groupCreator}}}'> {{line.groupName}} CREATED BY {{line.groupCreator}} </option> -->
                         <!-- <option value = {{line.groupName, line.groupCreator}}> {{line.groupName}} CREATED BY {{line.groupCreator}} </option> -->
                     {% endfor %}
+
                 </select> </br> </br>
 		<input type="submit" value = Upload /> </br>
 		{% if error %}
@@ -32,9 +33,9 @@
 		{% endif %}
 
 		</br> </br>
-		<a href="/home">Go Back</a>
+		<a href="/home"> Go Back </a>
 		</br>
-		<a href="/logout">Logout</a>
+		<a href="/logout"> Logout </a>
 
 	</form>
 

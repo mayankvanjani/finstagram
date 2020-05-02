@@ -1,50 +1,63 @@
 <html>
 <head>
 <style>
-	body {
-		background-color: rgba(255,255,204,0.75);
-	}
+	body {background-color: rgba(255,255,204,0.75);}
 </style>
 </head>
 
 <body>
-	<h1>Welcome {{username}}</h1>
-	<h1>Manage Your Followers Here</h1>
+	<h1> Welcome {{username}} </h1>
+	<h2> Manage Your Followers Here </h2>
 
 
-	<h2><center>Followers</center></h2>
+	<h2><center> Followers </center></h2>
 		<style type="text/css">
-			table, th, td{
-				border: 1px solid black;
+			<!-- table, th, td{border: 1px solid black;} -->
+
+			table {border: 1px solid black}
+
+			th, td {
+				padding: 5px;
+				border-bottom: 1px solid #ddd
 			}
+
+			tr:not(:first-child):hover {background-color:#C0C0C0}
+
 		</style>
 
 		<table align="center">
-			<th>Follower Names</th>
+			<th> Follower Names </th>
 
-		{% for line in followerPosts %}
+			{% for line in followerPosts %}
 			<tr>
-				<td><center>{{line.follower}}</center></td>
+				<td><center> {{line.follower}} </center></td>
 			</tr>
-		{% endfor %}
+			{% endfor %}
 
 		</table>
 
 
-	<h2><center>Follow Requests</center></h2>
+	<h2><center> Follow Requests </center></h2>
 		<style type="text/css">
-			table, th, td{
-				border: 1px solid black;
+			<!-- table, th, td{border: 1px solid black;} -->
+
+			table {border: 1px solid black}
+
+			th, td {
+				padding: 5px;
+				border-bottom: 1px solid #ddd
 			}
+
+			tr:not(:first-child):hover {background-color:#C0C0C0}
 		</style>
 
 		<table align="center">
-			<th>Follow Requests</th>
-			<th>Choose to Accept or Decline</th>
+			<th> Follow Requests </th>
+			<th> Choose to Accept or Decline </th>
 
-		{% for line in requestPosts %}
+			{% for line in requestPosts %}
 			<tr>
-				<td><center>{{line.follower}}</center></td>
+				<td><center> {{line.follower}} </center></td>
 				<form action="/acceptRequest" method="POST">
 				<center><input type="hidden" name = "accepted" value = {{line.follower}}></center>
 				<td><center><input type="submit" value = Accept /></center>
@@ -54,11 +67,11 @@
 				<center><input type="submit" value = Decline /></center></td>
 				</form>
 			</tr>
-		{% endfor %}
+			{% endfor %}
 
 		</table>
 
-	<h2><center>Follow Someone Else</center></h2>
+	<h2><center> Follow Someone Else </center></h2>
 		<center><form action="/followRequest" method="POST">
 			<input type="text" name="request" placeholder="Enter Username" required/> </br>
 			<input type="submit" value="Submit Follow Request"  />
@@ -71,9 +84,9 @@
 
 
 	</br> </br>
-	<a href="/home">Go Back</a>
+	<a href="/home"> Go Back </a>
 	</br>
-	<a href="/logout">Logout</a>
+	<a href="/logout"> Logout </a>
 
 </body>
 

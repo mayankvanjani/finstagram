@@ -14,6 +14,7 @@ SALT = "cs3083salting"
 picID = 0
 picNum = 1
 IMAGES = os.path.join(os.getcwd(), "Uploaded_Images")
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 #Configure MySQL
 conn = pymysql.connect(host="localhost",
@@ -130,6 +131,9 @@ def post():
     cursor.close()
     return render_template('post.html', username = user, groups = groupNames)
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/postPhoto', methods = ["GET", "POST"])
 @isLoggedIn
 def postPhoto():
@@ -170,6 +174,14 @@ def postPhoto():
         cursor.close()
         return render_template('post.html', username = user, groups = groupNames, error = error)
 
+    if imageFile and not allowed_file(imageName):
+        error = "Incorrect Upload Type: Use jpg, png for best performance"
+        query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
+        cursor.execute(query, (user))
+        groupNames = cursor.fetchall()
+        cursor.close()
+        return render_template('post.html', username = user, groups = groupNames, error = error)
+    
     share = share.split("@!@")
     print(share, type(share))
     #if share != "none" or share != "allFollowers":
@@ -184,7 +196,7 @@ def postPhoto():
     conn.commit()
 
     if len(share) == 2:
-        print(share[0],share[1])
+        #print(share[0],share[1])
         ins = "INSERT INTO SharedWith VALUES(%s, %s, %s)"
         findpID = "SELECT pID FROM Photo WHERE postingDate=%s AND filePath=%s AND allFollowers=%s AND caption=%s AND poster=%s"
         cursor.execute(findpID, (dt,imageName,allFollow,cap,user))
@@ -218,7 +230,8 @@ def viewPhotos():
     
     query = ("SELECT filePath,pID,firstName,lastName,postingDate " +
              "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) " +
-             "WHERE username = %s")
+             "WHERE username = %s " +
+             "ORDER BY Photo.postingDate DESC")
 
     cursor.execute(query, (user))
     yourPics = cursor.fetchall()
@@ -229,7 +242,8 @@ def viewPhotos():
              "UNION " +
              "SELECT filePath,pID,firstName,lastName,postingDate " +
              "FROM (SharedWith NATURAL JOIN BelongTo AS bt NATURAL JOIN Photo) JOIN Person AS p ON (bt.groupCreator=p.username) " +
-             "WHERE bt.username = %s AND bt.username != p.username")
+             "WHERE bt.username = %s AND bt.username != p.username " +
+             "ORDER BY postingDate DESC")
     #"ORDER BY 'Photo'.'postingDate' ASC" )
     
     cursor.execute(query, (user,user))
@@ -285,6 +299,51 @@ def viewGroup():
     data = cursor.fetchall()
     cursor.close()
     return render_template('viewGroups.html', username = user, posts = data)
+
+@app.route('/aftg')
+@isLoggedIn
+def aftg():
+    user = session["username"]
+    cursor = conn.cursor()
+    query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s AND groupCreator = %s"
+    cursor.execute(query, (user,user))
+    groupNames = cursor.fetchall()
+    cursor.close()
+    return render_template('aftg.html', username = session["username"], groups = groupNames)
+
+@app.route('/addFriendToGroup', methods = ["GET", "POST"])
+@isLoggedIn
+def addFriendToGroup():
+    user = session["username"]
+    cursor = conn.cursor();
+    chosen = request.form['chosenGroup']
+    chosen = chosen.split("@!@")
+    toAdd = request.form['friendUser']
+    #print(chosen,toAdd)
+    query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s AND groupCreator = %s"
+    cursor.execute(query, (user,user))
+    groupNames = cursor.fetchall()
+    
+    check = "SELECT * FROM Person WHERE username = %s"
+    cursor.execute(check, (toAdd))
+    found = cursor.fetchone()
+    if not found:
+        error = 'Username to Add Not Found, Try Again'
+        return render_template('aftg.html', username = session["username"], groups = groupNames, error = error)
+
+    again = "SELECT * FROM BelongTo WHERE username = %s AND groupName = %s AND groupCreator = %s"
+    cursor.execute(again, (toAdd,chosen[0],chosen[1]))
+    found = cursor.fetchone()
+    if found:
+        error = "User Already Belongs to This Group"
+        return render_template('aftg.html', username = session["username"], groups = groupNames, error = error)
+
+    ins = 'INSERT INTO BelongTo VALUES(%s, %s, %s)'
+    cursor.execute(ins, (toAdd,chosen[0],chosen[1]))
+    conn.commit()
+    cursor.close()
+    return redirect(url_for("home"))
+
 
 ### Follower Required Features ###
 @app.route('/manageFollows', methods = ["GET", "POST"])
@@ -376,4 +435,10 @@ app.secret_key = 'some key that you will never guess'
 #debug = True -> you don't have to restart flask
 #for changes to go through, TURN OFF FOR PRODUCTION
 if __name__ == "__main__":
+    print("STARTING")
+    #print(os.path.isdir("Uploaded_Images"))
+    if not os.path.isdir("Uploaded_Images"):
+        print("Making Images Directory")
+        os.mkdir(IMAGES)
     app.run('127.0.0.1', 5000, debug = True)
+

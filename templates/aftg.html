@@ -1,0 +1,44 @@
+<html>
+<head>
+<style>
+	body {background-color: rgba(255,204,204,0.75);}
+</style>
+</head>
+
+<body>
+	<h1> Welcome {{username}} </h1>
+	<h2> Add a Friend to One of Your Friend Groups </h2>
+
+	<form action="/addFriendToGroup" method="POST">
+
+		</br> Select one of Your Friend Groups </br>
+		<select name = "chosenGroup" required>
+
+                    <option value = ""> --Please select an option-- </option>
+                    {% for line in groups %}
+			<option value = '{{line.groupName}}@!@{{line.groupCreator}}'> {{line.groupName}} CREATED BY {{line.groupCreator}} </option>
+                    {% endfor %}
+
+                </select> </br> 
+		
+		If there are no Group Options, Create a New Friend Group <a href="/addGroup"> Here </a> </br>
+		
+		</br>
+
+		<input type="text" name = "friendUser" placeholder="Friend's Username" required/> </br>
+
+		<input type="submit" value = Submit />
+		{% if error %}
+			<p class="error"><strong>Error:</strong> {{error}}</p>
+		{% endif %}
+
+		</br> </br>
+		<a href="/home"> Go Back </a>
+		</br>
+		<a href="/logout"> Logout </a>
+
+	</form>
+
+</body>
+
+</html>
