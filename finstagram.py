@@ -5,6 +5,8 @@ import hashlib
 from functools import wraps
 from datetime import datetime
 import os
+import random
+import string
 
 #Initialize the app from Flask
 app = Flask(__name__)
@@ -139,8 +141,10 @@ def postPhoto():
         
     if request.files:
         imageFile = request.files['upload']
-        imageName = str(picNum) + imageFile.filename
-        picNum += 1
+        letters = string.ascii_lowercase
+        ran = ''.join(random.choice(letters) for i in range(10))
+        imageName = ran + imageFile.filename
+        #picNum += 1
         filepath = os.path.join(IMAGES, imageName)
         imageFile.save(filepath)
         cap = request.form['caption']
@@ -165,13 +169,31 @@ def postPhoto():
         groupNames = cursor.fetchall()
         cursor.close()
         return render_template('post.html', username = user, groups = groupNames, error = error)
-    
+
+    share = share.split("@!@")
+    print(share, type(share))
+    #if share != "none" or share != "allFollowers":
+    #    
+    #cursor.execute(ins, (picID,))
+    #conn.commit()
 
     ins = 'INSERT INTO Photo VALUES(%s, %s, %s, %s, %s, %s)'
     #picID += 1
     #cursor.execute(ins, (picID,dt,pic,allFollow,cap,user))
     cursor.execute(ins, (picID,dt,imageName,allFollow,cap,user))
     conn.commit()
+
+    if len(share) == 2:
+        print(share[0],share[1])
+        ins = "INSERT INTO SharedWith VALUES(%s, %s, %s)"
+        findpID = "SELECT pID FROM Photo WHERE postingDate=%s AND filePath=%s AND allFollowers=%s AND caption=%s AND poster=%s"
+        cursor.execute(findpID, (dt,imageName,allFollow,cap,user))
+        curpID = cursor.fetchone()['pID']
+        print(curpID,type(curpID))
+        if curpID:
+            cursor.execute(ins, (curpID,share[0],share[1]))
+            conn.commit()
+        
     cursor.close()
     return redirect(url_for("home"))
 
@@ -202,10 +224,15 @@ def viewPhotos():
     yourPics = cursor.fetchall()
 
     query = ("SELECT filePath,pID,firstName,lastName,postingDate " +
-             "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) JOIN Follow ON(Photo.poster = Follow.followee)" +
-             "WHERE followStatus = 1 AND follower = %s AND allFollowers = 1")
+             "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) JOIN Follow ON(Photo.poster = Follow.followee) " +
+             "WHERE followStatus = 1 AND follower = %s AND allFollowers = 1 " +
+             "UNION " +
+             "SELECT filePath,pID,firstName,lastName,postingDate " +
+             "FROM (SharedWith NATURAL JOIN BelongTo AS bt NATURAL JOIN Photo) JOIN Person AS p ON (bt.groupCreator=p.username) " +
+             "WHERE bt.username = %s AND bt.username != p.username")
+    #"ORDER BY 'Photo'.'postingDate' ASC" )
     
-    cursor.execute(query, (user))
+    cursor.execute(query, (user,user))
     sharedPics = cursor.fetchall()
     cursor.close()
     #return render_template('view.html', username = user, yourImages = pass, sharedImages = pass)
