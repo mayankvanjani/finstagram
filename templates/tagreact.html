@@ -1,0 +1,69 @@
+<html>
+<head>
+<style>
+	body {background-color: rgba(204,255,204,0.75);}
+</style>
+</head>
+
+<body>
+
+	<h1> Welcome {{username}} </h1>
+	<h2> Here are the Tags and Reactions for pID: {{photoID}} </h2> 
+	<!-- <h2><center> {{filepath}} </center></h2> -->
+	<center> <img src="/Uploaded_Images/{{filePath}}" width="300" /> </center>
+	</br></br>
+
+	<style type="text/css">
+		table {border: 1px solid black}
+
+		th, td {
+			padding: 5px;
+			border-bottom: 1px solid #ddd
+		}
+
+		tr:not(:first-child):hover {background-color:#C0C0C0}
+	</style>
+
+	<h3><center> Users Tagged In This Photo </center></h3>
+	<table align="center">
+		<th> Tagged Username </th>
+		<th> Tagged First Name </th>
+		<th> Tagged Last Name </th>
+
+		{% for line in tagInfo %}
+		<tr>
+			<td><center> {{line.username}} </center></td>
+			<td><center> {{line.firstName}} </center></td>
+			<td><center> {{line.lastName}} </center></td>
+		</tr>
+		{% endfor %}
+
+	</table>
+
+	</br>
+	<h3><center> Users Who Reacted To This Photo </center></h3>
+	<table align="center">
+		<th> Reacted Username </th>
+		<th> Emoji </th>
+		<th> Comment </th>
+
+		{% for line in reactInfo %}
+		<tr>
+			<td><center> {{line.username}} </center></td>
+			<td><center> {{line.emoji}} </center></td>
+			<td><center> {{line.comment}} </center></td>
+		</tr>
+		{% endfor %}
+
+	</table>
+
+
+	</br>
+	</br>
+	<a href="/viewPhotos"> Go Back </a><br>
+	<a href="/logout"> Logout </a>
+
+</body>
+
+
+</html>

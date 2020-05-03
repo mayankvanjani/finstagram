@@ -9,7 +9,7 @@ import random
 import string
 
 #Initialize the app from Flask
-app = Flask(__name__)
+app = Flask(__name__, static_folder = "Uploaded_Images")
 SALT = "cs3083salting"
 picID = 0
 picNum = 1
@@ -26,7 +26,7 @@ conn = pymysql.connect(host="localhost",
                        autocommit=True,
                        cursorclass=pymysql.cursors.DictCursor)
 
-#Define a route to hello function
+#Define a route to login or home
 @app.route("/")
 def hello():
     if "username" in session: return redirect(url_for("home"))
@@ -66,7 +66,6 @@ def register():
 #Authenticates the register
 @app.route('/registerAuth', methods=['GET', 'POST'])
 def registerAuth():
-    #grabs information from the forms
     username = request.form['username']
     password = request.form['password'] + SALT
     hashed_password = hashlib.sha256(password.encode("utf-8")).hexdigest()
@@ -91,35 +90,37 @@ def registerAuth():
         return render_template('index.html')
 
 ### Check if Logged In ###
+# Authenticates login as wrapper for remaining functions
 def isLoggedIn(f):
     @wraps(f)
     def dec(*args,**kwargs):
         if not "username" in session: return redirect(url_for("login"))
         return f(*args,**kwargs)
-    #if not "username" in session: return redirect(url_for("login"))
     #print("check login")
-    #return redirect("/")
     return dec
-
-'''
-def isLoggedIn():
-    if not "username" in session: return redirect(url_for("login"))
-'''
-
 
 # Redireect to homepage if logged in
 @app.route('/home')
 @isLoggedIn
 def home():
-    #user = session['username']
-    #cursor = conn.cursor();
-    #query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-    #cursor.execute(query, (user))
-    #data = cursor.fetchall()
-    #cursor.close()
+    user = session['username']
     return render_template('home.html', username = session["username"])
 
-### IMPLEMENTATION FUNCTIONS ###
+
+
+###                                                ###
+###                                                ###
+### IMPLEMENTATION FUNCTIONS: Project Requirements ###
+###                                                ###
+###                                                ###
+
+
+
+###                          ###
+### VIEWING / POSTING PHOTOS ###
+###                          ###
+
+# Define Route for Posting a Photo
 @app.route('/post')
 @isLoggedIn
 def post():
@@ -131,26 +132,28 @@ def post():
     cursor.close()
     return render_template('post.html', username = user, groups = groupNames)
 
+# Checks valid input image files ('txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Posts Photo (Updates DB)
 @app.route('/postPhoto', methods = ["GET", "POST"])
 @isLoggedIn
 def postPhoto():
     global picNum
     #print(picID)
     user = session['username']
-    #pic = request.form['upload']
     cursor = conn.cursor()
         
     if request.files:
         imageFile = request.files['upload']
+        # Add random forehead to image path to prevent repeated filenames
         letters = string.ascii_lowercase
         ran = ''.join(random.choice(letters) for i in range(10))
         imageName = ran + imageFile.filename
-        #picNum += 1
         filepath = os.path.join(IMAGES, imageName)
         imageFile.save(filepath)
+        
         cap = request.form['caption']
         share = request.form['shared']
         allFollow = (1 if share == "allFollowers" else 0)
@@ -164,7 +167,6 @@ def postPhoto():
         groupNames = cursor.fetchall()
         cursor.close()
         return render_template('post.html', username = user, groups = groupNames, error = error)
-    
     
     if share == "":
         error = "Select who to share this photo with"
@@ -183,25 +185,23 @@ def postPhoto():
         return render_template('post.html', username = user, groups = groupNames, error = error)
     
     share = share.split("@!@")
-    print(share, type(share))
-    #if share != "none" or share != "allFollowers":
-    #    
-    #cursor.execute(ins, (picID,))
-    #conn.commit()
+    #print(share, type(share))
 
+    # Insert photo into Photo table, keeps track of allfollower
     ins = 'INSERT INTO Photo VALUES(%s, %s, %s, %s, %s, %s)'
-    #picID += 1
-    #cursor.execute(ins, (picID,dt,pic,allFollow,cap,user))
     cursor.execute(ins, (picID,dt,imageName,allFollow,cap,user))
     conn.commit()
 
     if len(share) == 2:
+        # Update SharedWith in case photo was shared with a friend group
         #print(share[0],share[1])
         ins = "INSERT INTO SharedWith VALUES(%s, %s, %s)"
-        findpID = "SELECT pID FROM Photo WHERE postingDate=%s AND filePath=%s AND allFollowers=%s AND caption=%s AND poster=%s"
+        findpID = ("SELECT pID FROM Photo " +
+                   "WHERE postingDate=%s AND filePath=%s AND allFollowers=%s AND caption=%s AND poster=%s")
+        
         cursor.execute(findpID, (dt,imageName,allFollow,cap,user))
         curpID = cursor.fetchone()['pID']
-        print(curpID,type(curpID))
+
         if curpID:
             cursor.execute(ins, (curpID,share[0],share[1]))
             conn.commit()
@@ -209,19 +209,7 @@ def postPhoto():
     cursor.close()
     return redirect(url_for("home"))
 
-'''
-@app.route('/view')
-@isLoggedIn
-def view():
-    user = session["username"]
-    #cursor = conn.cursor()
-    #query = "SELECT groupName,groupCreator FROM BelongTo WHERE username = %s"
-    #cursor.execute(query, (user))
-    #groupNames = cursor.fetchall()
-    #cursor.close()
-    #return render_template('post.html', username = user, groups = groupNames)
-    return render_template('view.html', username = user)
-'''
+# Define Route for Viewing Photos
 @app.route('/viewPhotos', methods = ["GET", "POST"])
 @isLoggedIn
 def viewPhotos():
@@ -235,35 +223,60 @@ def viewPhotos():
 
     cursor.execute(query, (user))
     yourPics = cursor.fetchall()
-
+    #print("MINE: ", yourPics)
     query = ("SELECT filePath,pID,firstName,lastName,postingDate " +
-             "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) JOIN Follow ON(Photo.poster = Follow.followee) " +
+             "FROM (Photo JOIN Person ON (Photo.poster = Person.username)) " +
+             "JOIN Follow ON(Photo.poster = Follow.followee) " +
              "WHERE followStatus = 1 AND follower = %s AND allFollowers = 1 " +
              "UNION " +
              "SELECT filePath,pID,firstName,lastName,postingDate " +
-             "FROM (SharedWith NATURAL JOIN BelongTo AS bt NATURAL JOIN Photo) JOIN Person AS p ON (bt.groupCreator=p.username) " +
+             "FROM (SharedWith NATURAL JOIN BelongTo AS bt NATURAL JOIN Photo) " +
+             "JOIN Person AS p ON (bt.groupCreator=p.username) " +
              "WHERE bt.username = %s AND bt.username != p.username " +
              "ORDER BY postingDate DESC")
-    #"ORDER BY 'Photo'.'postingDate' ASC" )
     
     cursor.execute(query, (user,user))
     sharedPics = cursor.fetchall()
+    #print("SHARED: ", sharedPics)
     cursor.close()
-    #return render_template('view.html', username = user, yourImages = pass, sharedImages = pass)
     return render_template('view.html', username = user, yourImages = yourPics, sharedImages = sharedPics)
 
+# Define Route for Viewing Tags and Reactions (Note: No methods to create tags or reactions)
+@app.route('/viewTagsandReacts', methods = ["GET", "POST"])
+@isLoggedIn
+def viewTagsandReacts():
+    user = session['username']
+    usepID = request.form['id']
+    path = request.form['path']
+    path2 = str(request.form['path'])
+    #print(usepID, type(usepID))
+    #print("TAG PATH: ", path, type(path), path2)
+    usepID = int(usepID)
+    cursor = conn.cursor()
+    
+    tagQuery = ("SELECT username,firstName,lastName FROM Photo NATURAL JOIN Tag NATURAL JOIN Person " +
+                "WHERE pID = %s AND tagStatus = 1")
+    cursor.execute(tagQuery, (usepID))
+    tag = cursor.fetchall()
 
+    reactQuery = "SELECT username,emoji,comment FROM ReactTo WHERE pID = %s"
+    cursor.execute(reactQuery, (usepID))
+    react = cursor.fetchall()
 
+    cursor.close()
+    return render_template('tagreact.html', username = user, photoID = usepID, filePath = path, tagInfo = tag, reactInfo = react)
 
+###                          ###
+###   MANAGING FRIENDGROUPS  ###
+###                          ###
 
-### FriendGroup Required Features ###
-# Add a friend group
+# Define Route for Adding a Friend Group
 @app.route('/addGroup')
 @isLoggedIn
 def addGroup():
     return render_template('friend.html', username = session["username"])
 
-# Data filled in on add group page, update database
+# Add a Friend Group (Update DB)
 @app.route('/addFriendGroup', methods = ["GET", "POST"])
 @isLoggedIn
 def addFriendGroup():
@@ -287,7 +300,8 @@ def addFriendGroup():
         conn.commit()
         cursor.close()
         return redirect(url_for("home"))
-    
+
+# Define Route for Viewing Friend Groups
 @app.route('/viewGroup', methods = ["GET", "POST"])
 @isLoggedIn
 def viewGroup():
@@ -300,6 +314,7 @@ def viewGroup():
     cursor.close()
     return render_template('viewGroups.html', username = user, posts = data)
 
+# Define Route for Adding a Friend to a Friend Group
 @app.route('/aftg')
 @isLoggedIn
 def aftg():
@@ -311,6 +326,7 @@ def aftg():
     cursor.close()
     return render_template('aftg.html', username = session["username"], groups = groupNames)
 
+# Add Friend to Group (Updates DB)
 @app.route('/addFriendToGroup', methods = ["GET", "POST"])
 @isLoggedIn
 def addFriendToGroup():
@@ -344,8 +360,11 @@ def addFriendToGroup():
     cursor.close()
     return redirect(url_for("home"))
 
+###                          ###
+###     MANAGING FOLLOWS     ###
+###                          ###
 
-### Follower Required Features ###
+# Define Route for Managing Followers
 @app.route('/manageFollows', methods = ["GET", "POST"])
 @isLoggedIn
 def manageFollows():
@@ -362,6 +381,7 @@ def manageFollows():
     return render_template('follows.html', username = user,
                            followerPosts = moreData, requestPosts = data)
 
+# Send a Follow Request (Updates DB)
 @app.route('/followRequest', methods = ["GET", "POST"])
 @isLoggedIn
 def followRequest():
@@ -392,19 +412,17 @@ def followRequest():
 
     ins = "INSERT into Follow VALUES(%s,%s,%s)"
     cursor.execute(ins, (user,toFollow,0))
-    #conn.commit()
-    #upd = 'UPDATE Follow SET followStatus=1 WHERE follower = %s AND followee = %s'
-    #cursor.execute(upd, (user, toFollow))
     conn.commit()
     cursor.close()
     return redirect(url_for("home"))
 
+# Accept a Follow Request (Updates DB)
 @app.route('/acceptRequest', methods = ["GET", "POST"])
 @isLoggedIn
 def acceptRequest():
     user = session['username']
     accepted = request.form['accepted']
-    print(accepted)
+    #print(accepted)
     cursor = conn.cursor()
     query = 'UPDATE Follow SET followStatus = 1 WHERE Follow.follower = %s AND Follow.followee = %s'
     cursor.execute(query, (accepted,user))
@@ -412,6 +430,7 @@ def acceptRequest():
     cursor.close()
     return redirect('/manageFollows')
 
+# Decline a Follow Request (Updates DB)
 @app.route('/declineRequest', methods = ["GET", "POST"])
 @isLoggedIn
 def declineRequest():
@@ -425,6 +444,7 @@ def declineRequest():
     cursor.close()
     return redirect('/manageFollows')
 
+# Logout
 @app.route('/logout')
 def logout():
     session.pop('username')
@@ -434,6 +454,7 @@ app.secret_key = 'some key that you will never guess'
 #Run the app on localhost port 5000
 #debug = True -> you don't have to restart flask
 #for changes to go through, TURN OFF FOR PRODUCTION
+
 if __name__ == "__main__":
     print("STARTING")
     #print(os.path.isdir("Uploaded_Images"))
