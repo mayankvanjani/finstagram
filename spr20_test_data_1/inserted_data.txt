@@ -1,0 +1,41 @@
+Photo Table:
+A posted photo 1, all followers true
+C posted photo 2, all followers true
+D posted photo 3, all followers true
+D posted photo 4, all followers true, null caption
+E posted photo 5, all followers false
+
+Friend Group:
+E: Best friends
+D: Best friends
+D: Roommates
+
+Belong to:
+A belongs to E's bestfriends
+B belongs to D's roommates
+
+Follow:
+B follows A
+C follows A
+D sent request to A
+B follows D
+A follows B
+E follows A
+D follows B
+E sent request to B
+D follows C
+A follows E
+
+Tag:
+B tagged in A's photo (1), not accepted
+C tagged in A's photo, accepted
+D tagged in C's photo, accepted
+E tagged in A's photo, accepted
+
+Reacts:
+D reacted to C's photo, heart, caption
+E thumbs up A's photo
+
+Shared With:
+E shared photo 5 with best friends group
+D shared photo 3 with best friends

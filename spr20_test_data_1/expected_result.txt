@@ -1,0 +1,16 @@
+VIEW PHOTOS:
+A should see:
+Photo 1 (A posted this), E's thumbs up reaction, C & E tagged, B tagged but not accepted (should not show up)
+Photo 5 (E shared photo 5 with best friend group that A is in).
+
+B should see:
+Photo 1, Photo 3, Photo 4
+
+C should see:
+Photo 1, Photo 2 (D is tagged and likes)
+
+D should see:
+Photo 3, Photo 4, Photo 2
+
+E should see:
+Photo 1, Photo 5

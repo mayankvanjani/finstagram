@@ -1,4 +1,4 @@
-#Import Flask Library
+#Import Flask LibraryA
 from flask import Flask, render_template, request, session, url_for, redirect
 import pymysql.cursors
 import hashlib
@@ -17,11 +17,12 @@ IMAGES = os.path.join(os.getcwd(), "Uploaded_Images")
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 #Configure MySQL
+# UPDATE DB TO NAME OF DB IN phpMyAdmin
 conn = pymysql.connect(host="localhost",
                        port = 8889,
                        user="root",
                        password="root",
-                       db="finstagram",
+                       db="finstagram2",
                        charset="utf8mb4",
                        autocommit=True,
                        cursorclass=pymysql.cursors.DictCursor)
@@ -264,7 +265,7 @@ def viewTagsandReacts():
     react = cursor.fetchall()
 
     cursor.close()
-    return render_template('tagreact.html', username = user, photoID = usepID, filePath = path, tagInfo = tag, reactInfo = react)
+    return render_template('tagreact.html', username=user, photoID=usepID, filePath=path, tagInfo=tag, reactInfo=react)
 
 ###                          ###
 ###   MANAGING FRIENDGROUPS  ###
